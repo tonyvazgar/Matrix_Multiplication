@@ -1,14 +1,25 @@
 #include <stdio.h>
 #include "mpi.h"
-#define N               4        /* number of rows and columns in matrix */
+#define N  4  //Matriz cuadrada de NxN
 
 MPI_Status status;
 
-double a[N][N],b[N][N],c[N][N];
+double a[N][N];
+double b[N][N];
+double c[N][N];
 
 main(int argc, char **argv)
 {
-    int numtasks,taskid,numworkers,source,dest,rows,offset,i,j,k;
+    int numtasks;
+    int taskid;
+    int numworkers;
+    int source;
+    int dest;
+    int rows;
+    int offset;
+    int i;
+    int j;
+    int k;
     
     struct timeval start, stop;
     
@@ -18,7 +29,9 @@ main(int argc, char **argv)
     
     numworkers = numtasks-1;
     
-    /*---------------------------- master ----------------------------*/
+    /*
+     * Master
+     */
     if (taskid == 0) {
         for (i=0; i<N; i++) {
             for (j=0; j<N; j++) {
@@ -29,12 +42,10 @@ main(int argc, char **argv)
         
         gettimeofday(&start, 0);
         
-        /* send matrix data to the worker tasks */
         rows = N/numworkers;
         offset = 0;
         
-        for (dest=1; dest<=numworkers; dest++)
-        {
+        for (dest=1; dest<=numworkers; dest++) {
             MPI_Send(&offset, 1, MPI_INT, dest, 1, MPI_COMM_WORLD);
             MPI_Send(&rows, 1, MPI_INT, dest, 1, MPI_COMM_WORLD);
             MPI_Send(&a[offset][0], rows*N, MPI_DOUBLE,dest,1, MPI_COMM_WORLD);
@@ -42,9 +53,7 @@ main(int argc, char **argv)
             offset = offset + rows;
         }
         
-        /* wait for results from all worker tasks */
-        for (i=1; i<=numworkers; i++)
-        {
+        for (i=1; i<=numworkers; i++){
             source = i;
             MPI_Recv(&offset, 1, MPI_INT, source, 2, MPI_COMM_WORLD, &status);
             MPI_Recv(&rows, 1, MPI_INT, source, 2, MPI_COMM_WORLD, &status);
@@ -53,10 +62,11 @@ main(int argc, char **argv)
         
         gettimeofday(&stop, 0);
         
-        printf("Here is the result matrix:\n");
+        printf("Multiplied Matrix:\n");
         for (i=0; i<N; i++) {
-            for (j=0; j<N; j++)
+            for (j=0; j<N; j++){
                 printf("%6.2f   ", c[i][j]);
+            }
             printf ("\n");
         }
         
@@ -65,20 +75,25 @@ main(int argc, char **argv)
         
     }
     
-    /*---------------------------- worker----------------------------*/
+    /*
+     * Worker
+     */
     if (taskid > 0) {
         source = 0;
         MPI_Recv(&offset, 1, MPI_INT, source, 1, MPI_COMM_WORLD, &status);
         MPI_Recv(&rows, 1, MPI_INT, source, 1, MPI_COMM_WORLD, &status);
+        
+        
         MPI_Recv(&a, rows*N, MPI_DOUBLE, source, 1, MPI_COMM_WORLD, &status);
         MPI_Recv(&b, N*N, MPI_DOUBLE, source, 1, MPI_COMM_WORLD, &status);
         
-        /* Matrix multiplication */
+        //Multiplicación ocurre aqui
         for (k=0; k<N; k++)
             for (i=0; i<rows; i++) {
                 c[i][k] = 0.0;
-                for (j=0; j<N; j++)
+                for (j=0; j<N; j++){
                     c[i][k] = c[i][k] + a[i][j] * b[j][k];
+                }
             }
         
         
