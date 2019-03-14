@@ -1,3 +1,6 @@
+/*
+ *Matrix multiplication con MPI
+ */
 #include <stdio.h>
 #include "mpi.h"
 #define N  4  //Matriz cuadrada de NxN
